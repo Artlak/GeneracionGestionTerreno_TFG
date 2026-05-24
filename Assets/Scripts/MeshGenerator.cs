@@ -113,11 +113,6 @@ public class MeshGenerator : MonoBehaviour
         }
     }
 
-    void ApplyNoise()
-    {
-
-    }    
-
     void ColorChange()
     {
         colors = new Color[vertices.Length];

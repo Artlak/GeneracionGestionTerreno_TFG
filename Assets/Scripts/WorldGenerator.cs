@@ -1,16 +1,12 @@
 using AuxiliarClasses;
 using System.Collections.Generic;
-using System.Net.NetworkInformation;
 using UnityEngine;
-using UnityEngine.XR;
 
 public class WorldGenerator : MonoBehaviour
 {
     Biome biome; // Se vacía luego de la creación de los biomas en el mapa, ya que es bastante pesado. Cuantos más biomas mayor;
 
-    WorldVertex[] worldVertices;
-
-    // List<Chunks> chunks = new List<Chunks>();  Clase Por crear
+    WorldVertex[] worldVertices; // Más rápido que lista u arrayList. Como no se va a alterar la mejor opción es array
 
     // Variables necesarias para la creacción del mundo
 
@@ -32,7 +28,7 @@ public class WorldGenerator : MonoBehaviour
 
     private void Start()
     {
-        verticesSide = (chunksSide - 1) * 20 + 21; // 20 porque salvo el primer chunk (de ahí el -1) que es de 21, el resto es de 20, ya que también usan la última fila del anterior chunk.
+        verticesSide = chunksSide * 20 + 1; // 20 porque salvo la línea extra que todos usan del anterior, usan 20 propios.
 
         if (density > 1)
         {
@@ -48,7 +44,7 @@ public class WorldGenerator : MonoBehaviour
         GenerateWorldMap();
     }
 
-    private void GenerateWorldMap()
+    void GenerateWorldMap()
     {
         System.Random prng = new System.Random(seed);
 
@@ -65,6 +61,8 @@ public class WorldGenerator : MonoBehaviour
         {
             ExtraVerticesAssignator();
         }
+
+        Debug.Log("Mapa de vertices creado");
     }
 
     void VertexListCreator() // Añade la cantidad de vertices necesarios al arrayList
