@@ -14,13 +14,6 @@ namespace AuxiliarClasses
         {
 
         }
-
-        public void Clear()
-        {
-            height = 0f;
-            color = Color.white;
-            resistance = 0f;
-        }
     }
 
     public class Biome
@@ -49,7 +42,7 @@ namespace AuxiliarClasses
 
         public static Color ColorByResistance(Color heightColor, float _resistance)
         {
-            Color newColor = Color.Lerp(heightColor, Color.black, _resistance);
+            Color newColor = Color.Lerp(heightColor, Color.black, _resistance * .5f);
 
             return newColor;
         }
@@ -60,18 +53,22 @@ namespace AuxiliarClasses
 
             _biomeColor.mode = GradientMode.Fixed;
 
+            float baseColor = (float)prng.NextDouble();
+
             GradientColorKey[] gck;
             GradientAlphaKey[] gak;
 
+            float s = Mathf.Lerp(0.5f, 1f, (float)prng.NextDouble());
+            float v = Mathf.Lerp(0.4f, 1f, (float)prng.NextDouble());
+
             gck = new GradientColorKey[4];
-            gck[0].color = Color.HSVToRGB((float)prng.NextDouble(), (float)prng.NextDouble(), (float)prng.NextDouble());
-            gck[0].time = .0f;
-            gck[1].color = Color.HSVToRGB((float)prng.NextDouble(), (float)prng.NextDouble(), (float)prng.NextDouble());
-            gck[1].time = .2f;
-            gck[2].color = Color.HSVToRGB((float)prng.NextDouble(), (float)prng.NextDouble(), (float)prng.NextDouble());
-            gck[2].time = .8f;
-            gck[3].color = Color.HSVToRGB((float)prng.NextDouble(), (float)prng.NextDouble(), (float)prng.NextDouble());
-            gck[3].time = 1.0f;
+            for (int i = 0; i < gck.Length; i++)
+            {
+                float h = Mathf.Lerp(baseColor, (float)prng.NextDouble(), (float)prng.NextDouble());
+                
+                gck[i].color = Color.HSVToRGB(h,s,v);
+                gck[i].time = (float) i / (gck.Length - 1);
+            }
             gak = new GradientAlphaKey[2];
             gak[0].alpha = 1.0f;
             gak[0].time = 0.0f;

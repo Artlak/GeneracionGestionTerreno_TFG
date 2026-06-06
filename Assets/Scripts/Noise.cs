@@ -5,7 +5,7 @@ public static class Noise
 {
     public static float[] GenerateNoiseMap(int chunksSide, int seed, float scale, int octaves, float persistence, float lacunarity /*Aumento de frecuencia*/, float heightLimit, bool resistance)
     {
-        int sideVertex = 21 + chunksSide * 20;
+        int sideVertex = chunksSide * 20 + 1;
 
         float[] noiseMap = new float[sideVertex * sideVertex];
 
@@ -66,8 +66,8 @@ public static class Noise
                 for (int x = 0; x < sideVertex; x++)
                 {
                     noiseMap[v] = Mathf.InverseLerp(minNoiseHeight, maxNoiseHeight, noiseMap[v]);
-                    if (noiseMap[v] > heightLimit)
-                        noiseMap[v] = heightLimit;
+                    noiseMap[v] *= heightLimit;
+                    
                     v++;
                 }
             }

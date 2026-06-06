@@ -68,16 +68,18 @@ public class WorldGenerator : MonoBehaviour
 
     void VertexListCreator() // Añade la cantidad de vertices necesarios al arrayList
     {
-        WorldVertex auxVertex = new(); // Variable auxiliar reutilizable durante toda la asignación de valores
-
         // Dividido en ifs para no tener que repetirlo cada vez que tiene que generar los vértices extra
         if (density == 1)
         {
+            Debug.Log(biome.heightMap.Length);
+            Debug.Log(worldVertices.Length);
             for (int i = 0; i < biome.heightMap.Length; i++)
             {
+                WorldVertex auxVertex = new();
                 auxVertex.height = biome.heightMap[i];
                 auxVertex.resistance = biome.resistanceMap[i];
                 auxVertex.color = Biome.ColorByResistance(biome.biomeColor.Evaluate(auxVertex.height), auxVertex.resistance);
+
                 worldVertices[i] = auxVertex;
             }
         }
@@ -87,18 +89,20 @@ public class WorldGenerator : MonoBehaviour
             {
                 for (int x = 0; x < verticesSide; x++) // Coord X
                 {
+                    WorldVertex auxVertex = new();
                     auxVertex.height = biome.heightMap[x + y * verticesSide];
                     auxVertex.resistance = biome.resistanceMap[x + y * verticesSide];
                     auxVertex.color = Biome.ColorByResistance(biome.biomeColor.Evaluate(auxVertex.height), auxVertex.resistance);
+
                     worldVertices[v] = auxVertex;
                     v++;
 
                     if (x < verticesSide - 1) // Generación de vertices extra intercalados
-                    {
-                        auxVertex.Clear();
+                    {                        
                         for (int d = 1; d < density; d++)
                         {
-                            worldVertices[v] = auxVertex;
+                            WorldVertex auxVertex0 = new();
+                            worldVertices[v] = auxVertex0;
                             v++;
                         }
                     }
@@ -106,11 +110,11 @@ public class WorldGenerator : MonoBehaviour
 
                 if (y < verticesSide - 1)
                 {
-                    auxVertex.Clear();
                     for (int d = 1; d < density; d++)
                     {
                         for (int e = 0; e < verticesSideAux; e++) // Generación de linea de puntos extra completa
                         {
+                            WorldVertex auxVertex = new();
                             worldVertices[v] = auxVertex;
                             v++;
                         }
@@ -123,8 +127,6 @@ public class WorldGenerator : MonoBehaviour
 
     void ExtraBiomesAssignator(System.Random prng)
     {
-        WorldVertex auxVertex = new();
-
         for (int size, zones, b = 0; b < extraBiomesCount; b++) // size es el tamaño del bioma (aunque varíe ligeramente) zones comprende la cantidad de zonas del bioma totales
         {
             biome = new Biome(prng.Next(), chunksSide);
@@ -155,6 +157,7 @@ public class WorldGenerator : MonoBehaviour
 
                     for (int x = 0; x < sizeX; x++)
                     {
+                        WorldVertex auxVertex = new();
                         currentPos += x;
                         currentIndexPos += x * density;
                         auxVertex.height = biome.heightMap[currentPos];
@@ -170,14 +173,14 @@ public class WorldGenerator : MonoBehaviour
 
     void ExtraVerticesAssignator()
     {
-        WorldVertex auxVertex = new();
-
         float hIncrement = 0;
         float rIncrement = 0; //Variables que guardan el incremento de altura y resistencia
 
-        for (int y = 0; y < verticesSideAux - (density - 1); y += density)
+        int densityVertexIndex = verticesSideAux - (density - 1); // Index para el correcto acabado del bucle
+
+        for (int y = 0; y < densityVertexIndex; y += density)
         {
-            for (int x = 0; x < verticesSideAux - (density - 1); x += density)
+            for (int x = 0; x < densityVertexIndex; x += density)
             {
                 // Usa los vertices que se encuentran arriba y abajo para calcular la interpolación
 
@@ -186,6 +189,7 @@ public class WorldGenerator : MonoBehaviour
 
                 for (int a = 1; a < density; a++)
                 {
+                    WorldVertex auxVertex = new();
                     worldVertices[x + a + y * verticesSideAux].height = worldVertices[x + y * verticesSideAux].height + hIncrement * a; // El cálculo es la altura del último punto + incremento que es x parte del total para llegar al siguiente punto donde x es la densidad
                     worldVertices[x + a + y * verticesSideAux].resistance = worldVertices[x + y * verticesSideAux].resistance + rIncrement * a;
                     worldVertices[x + a + y * verticesSideAux].color = Biome.ColorByResistance(biome.biomeColor.Evaluate(auxVertex.height), auxVertex.resistance);
@@ -198,6 +202,7 @@ public class WorldGenerator : MonoBehaviour
                 {
                     for (int x = 0; x < verticesSideAux; x++)
                     {
+                        WorldVertex auxVertex = new();
                         hIncrement = (worldVertices[x + (y - density) * verticesSideAux].height - worldVertices[x + y * verticesSideAux].height) / density;
                         rIncrement = (worldVertices[x + (y - density) * verticesSideAux].resistance - worldVertices[x + y * verticesSideAux].resistance) / density;
 
