@@ -146,11 +146,11 @@ public class WorldGenerator : MonoBehaviour
 
                 if (density > 1) // Si la densidad es mayor a 1, el index real cambiará radicalmente, por lo que hay que calcular que punto concide con cada punto. Para no aplicar la formula cada vez, solo calculo el primer punto y luego recorro la lista como lo haría de normal
                 {
-                    int height = verticesSide - (startPos / verticesSide);
+                    int height = startPos / verticesSide;
                     indexStartPos = startPos * density + height * verticesSideAux * density;
                 }
 
-                for (int currentPos, currentIndexPos, y = 0; y < sizeY; y++) // Añadir logica para tenr en cuenta vertices extra de la densidad
+                for (int currentPos, currentIndexPos, y = 0; y < sizeY; y++)
                 {
                     currentPos = startPos + verticesSide * y;
                     currentIndexPos = startPos + verticesSideAux * density * y;
@@ -158,8 +158,8 @@ public class WorldGenerator : MonoBehaviour
                     for (int x = 0; x < sizeX; x++)
                     {
                         WorldVertex auxVertex = new();
-                        currentPos += x;
-                        currentIndexPos += x * density;
+                        currentPos ++;
+                        currentIndexPos += density;
                         auxVertex.height = biome.heightMap[currentPos];
                         auxVertex.resistance = biome.resistanceMap[currentPos];
                         auxVertex.resistance = biome.resistanceMap[currentPos];
@@ -189,10 +189,9 @@ public class WorldGenerator : MonoBehaviour
 
                 for (int a = 1; a < density; a++)
                 {
-                    WorldVertex auxVertex = new();
                     worldVertices[x + a + y * verticesSideAux].height = worldVertices[x + y * verticesSideAux].height + hIncrement * a; // El cálculo es la altura del último punto + incremento que es x parte del total para llegar al siguiente punto donde x es la densidad
                     worldVertices[x + a + y * verticesSideAux].resistance = worldVertices[x + y * verticesSideAux].resistance + rIncrement * a;
-                    worldVertices[x + a + y * verticesSideAux].color = Biome.ColorByResistance(biome.biomeColor.Evaluate(auxVertex.height), auxVertex.resistance);
+                    worldVertices[x + a + y * verticesSideAux].color = Biome.ColorByResistance(biome.biomeColor.Evaluate(worldVertices[x + a + y * verticesSideAux].height), worldVertices[x + a + y * verticesSideAux].resistance);
                 }
             }
 
@@ -202,13 +201,12 @@ public class WorldGenerator : MonoBehaviour
                 {
                     for (int x = 0; x < verticesSideAux; x++)
                     {
-                        WorldVertex auxVertex = new();
                         hIncrement = (worldVertices[x + (y - density) * verticesSideAux].height - worldVertices[x + y * verticesSideAux].height) / density;
                         rIncrement = (worldVertices[x + (y - density) * verticesSideAux].resistance - worldVertices[x + y * verticesSideAux].resistance) / density;
 
                         worldVertices[x + (y - a) * verticesSideAux].height = worldVertices[x + y * verticesSideAux].height + hIncrement * a;
                         worldVertices[x + (y - a) * verticesSideAux].resistance = worldVertices[x + y * verticesSideAux].resistance + rIncrement * a;
-                        worldVertices[x + (y - a) * verticesSideAux].color = Biome.ColorByResistance(biome.biomeColor.Evaluate(auxVertex.height), auxVertex.resistance);
+                        worldVertices[x + (y - a) * verticesSideAux].color = Biome.ColorByResistance(biome.biomeColor.Evaluate(worldVertices[x + (y - a) * verticesSideAux].height), worldVertices[x + (y - a) * verticesSideAux].resistance);
                     }
                 }
             }

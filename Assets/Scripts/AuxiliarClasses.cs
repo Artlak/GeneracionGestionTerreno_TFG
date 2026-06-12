@@ -2,13 +2,14 @@ using UnityEngine;
 
 namespace AuxiliarClasses
 {
+    [System.Serializable]
     public class WorldVertex
     {
-        public float height { get; set; }
+        public float height;
 
-        public Color color { get; set; }
+        public Color color;
 
-        public float resistance { get; set; }
+        public float resistance;
 
         public WorldVertex()
         {
@@ -36,8 +37,9 @@ namespace AuxiliarClasses
         public Biome(int seed, Gradient _biomeColor, int chunksSide)
         {
             biomeColor = _biomeColor;
-            heightMap = Noise.GenerateNoiseMap(chunksSide, seed, 80, 16, 0.7f, 2, 1f, false);
-            resistanceMap = Noise.GenerateNoiseMap(chunksSide, seed++ , 80, 16, 0.7f, 2, 0.5f, true);
+            heightMap = Noise.GenerateNoiseMap(chunksSide, seed, 80, 16, 0.7f, 1, 1f, false);
+            seed++;
+            resistanceMap = Noise.GenerateNoiseMap(chunksSide, seed, 80, 16, 0.7f, 1, 0.5f, true);
         }
 
         public static Color ColorByResistance(Color heightColor, float _resistance)
