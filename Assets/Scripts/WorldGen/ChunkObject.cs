@@ -313,7 +313,7 @@ public class ChunkObject : MonoBehaviour // Chunk and Cluster
     void UpdateMesh()
     {
         // Para suavizar el cabio a malla de menor detalle
-        Vector3 offset = new Vector3(0, chunkSideX * 0.02f, 0);
+        Vector3 offset = new Vector3(0, lodLevel * 0.2f, 0);
         transform.position -= offset;        
 
         mesh.vertices = meshVertices;
