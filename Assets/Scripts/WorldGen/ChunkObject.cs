@@ -1,9 +1,5 @@
 using AuxiliarClasses;
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class ChunkObject : MonoBehaviour // Chunk and Cluster
@@ -21,13 +17,13 @@ public class ChunkObject : MonoBehaviour // Chunk and Cluster
     public int parentChunkIndex { get; set; } // Índice del chunk del que se compone el cluster, se asigna desde el método ChunkFusion al fusionar los chunks, se utiliza para gestionar lod LoDs una vez fusionados los chunks, para separarlos de la forma correcta después.
 
     readonly int baseSize = 20; // Serían 21, pero para hacer - 1 y luego + 1 de nuevo lo dejo en 20
-    int baseSide;
+    int baseSide; // Lado de cada chunk teniendo en cuenta densidad
     int clusterSideX; // Cantidad de vertices de lado X
     int clusterSideZ; // Cantidad de vertices de lado Z
     int chunkSideX; // Cantidad de chunks de los que está compuesto de lado X
     int chunkSideZ; // Cantidad de chunks de los que está compuesto de lado Z
-    [SerializeField] int lodLevel;
-    int lodOffset; // Cantidad de elementos a sumar en el índice para acceder a la posición de los chunks de los que se compone
+    public int lodLevel;
+    
 
     public int density { get; set; }
 
@@ -49,19 +45,19 @@ public class ChunkObject : MonoBehaviour // Chunk and Cluster
     {
         meshCollider.enabled = false;
 
-        vertices = _vertices.ToArray();
+        vertices = _vertices;
 
         clusterSideX = _clusterSideX;
         clusterSideZ = _clusterSideZ;
         
-        baseSide = 20 * density + 1;
+        baseSide = baseSize * density + 1;
 
         chunkSideX = (clusterSideX - 1) / (baseSize * density);
         chunkSideZ = (clusterSideZ - 1) / (baseSize * density);
 
         lodLevel = chunkSideX >= chunkSideZ ? chunkSideX : chunkSideZ;
 
-        lodOffset = lodLevel - lodLevel / 2;
+        LoadMesh();
     }
 
     // Función de unión de chunks con distintas sobrecargas
@@ -90,6 +86,8 @@ public class ChunkObject : MonoBehaviour // Chunk and Cluster
             // El nuevo array de vertices se crea con el tamaño necesario para contener los vertices del cluster base y los nuevos vertices que se añaden al fusionar, teniendo en cuenta que se repiten la fila y columna de unión
             auxVertices = new WorldVertex[(clusterSideX + clusterX.clusterSideX - 1) * (clusterSideZ + clusterZ.clusterSideZ - 1)];
             int v = 0;
+
+            // Bucles para añadir los vertices al actual
 
             for (int z = 0; z < clusterSideZ; z++)
             {
@@ -125,8 +123,9 @@ public class ChunkObject : MonoBehaviour // Chunk and Cluster
 
             clusterSideZ += clusterZ.clusterSideZ - 1;
 
-            DataUpdate(auxVertices, clusterSideX, clusterSideZ);
+            DataUpdate(auxVertices, clusterSideX, clusterSideZ); // Actualiza datos chunkObject
 
+            // Desactiva chunks fusionados
             clusterX.gameObject.SetActive(false);
             clusterZ.gameObject.SetActive(false);
             clusterXZ.gameObject.SetActive(false);
@@ -137,7 +136,8 @@ public class ChunkObject : MonoBehaviour // Chunk and Cluster
             clusterX.parentChunkIndex = indexPos;
             
             auxVertices = new WorldVertex[clusterSideZ * (clusterSideX + clusterX.clusterSideX - 1)];
-            
+
+            // Bucle para añadir los vertices al actual
             for (int v = 0, z = 0; z < clusterSideZ; z++)
             {
                 for (int x = 0; x < clusterSideX; x++)
@@ -155,8 +155,9 @@ public class ChunkObject : MonoBehaviour // Chunk and Cluster
 
             clusterSideX += clusterX.clusterSideX - 1;
 
-            DataUpdate(auxVertices, clusterSideX, clusterSideZ);
+            DataUpdate(auxVertices, clusterSideX, clusterSideZ); // Actualiza datos chunkObject
 
+            // Desactiva chunk fusionado
             clusterX.gameObject.SetActive(false);
         }
         else if (chunkZIsValid)
@@ -165,6 +166,8 @@ public class ChunkObject : MonoBehaviour // Chunk and Cluster
             clusterZ.parentChunkIndex = indexPos;
 
             auxVertices = new WorldVertex[clusterSideX * (clusterSideZ + (clusterZ.clusterSideZ - 1))];
+
+            // Bucles para añadir los vertices al actual
             int v = 0;
             for (int i = 0; i < vertices.Length; i++) // Introduce los vertices del cluster actual en el nuevo array directamente ya que mantienen la misma posición debido a que los nuevos vértices se añaden al final
             {
@@ -182,56 +185,61 @@ public class ChunkObject : MonoBehaviour // Chunk and Cluster
 
             clusterSideZ += clusterZ.clusterSideZ - 1;
 
-            DataUpdate(auxVertices, clusterSideX, clusterSideZ);
+            DataUpdate(auxVertices, clusterSideX, clusterSideZ); // Actualiza datos chunkObject
 
+            // Desactiva chunks fusionados
             clusterZ.gameObject.SetActive(false);
-        }        
-
-        // LoadMesh();
+        }
     }
 
     // Función de separación de chunks
     public void ChunkDivision() // Guarda los datos del chunks como el cuadrado de abajo a la izquierda y activa los que estaban unidos
     {
-        // Valores si son iguales
-        int ownVertices = (baseSide - 1) * (chunkSideX - chunkSideX / 2) + 1;
+        WorldVertex[] auxVertices; // Matriz de los vertices que va a tenre el cluster / chunk actual
 
-        if (chunkSideX != chunkSideZ)
+        int loDtoLoadX = Mathf.NextPowerOfTwo(chunkSideX) / 2 != 0 ? Mathf.NextPowerOfTwo(chunkSideX) / 2 : 1; // Calculo del valor LoD menor al actual si es posible
+        int loDtoLoadZ = Mathf.NextPowerOfTwo(chunkSideZ) / 2 != 0 ? Mathf.NextPowerOfTwo(chunkSideZ) / 2 : 1; // Calculo del valor LoD menor al actual si es posible
+
+        int xAxis;
+        int zAxis;
+
+        if (loDtoLoadX == loDtoLoadZ)
+        {            
+            xAxis = loDtoLoadX * baseSize * density + 1;
+            zAxis = loDtoLoadZ * baseSize * density + 1;
+
+            ChunkController.chunkList[indexPos + loDtoLoadX].gameObject.SetActive(true); // Activa chunk abajo dcha
+            ChunkController.chunkList[indexPos + loDtoLoadZ * ChunkController.chunkSide].gameObject.SetActive(true); // Activa chunk arriba izq
+            ChunkController.chunkList[indexPos + loDtoLoadX + loDtoLoadZ * ChunkController.chunkSide].gameObject.SetActive(true); // Activa chunk arriba dcha
+
+        }
+        else if (loDtoLoadX > loDtoLoadZ)
         {
-            ownVertices = chunkSideX > chunkSideZ ? (baseSide - 1) * chunkSideZ + 1 : (baseSide - 1) * chunkSideX + 1;
+            xAxis = loDtoLoadX * baseSize * density + 1;
+            zAxis = chunkSideZ * baseSize * density + 1;
+
+            ChunkController.chunkList[indexPos + loDtoLoadX].gameObject.SetActive(true); // Activa chunk abajo dcha
+        }
+        else
+        {
+            xAxis = chunkSideX * baseSize * density + 1;
+            zAxis = loDtoLoadZ * baseSize * density + 1;
+
+            ChunkController.chunkList[indexPos + loDtoLoadZ * ChunkController.chunkSide].gameObject.SetActive(true); // Activa chunk arriba izq
         }
 
-        WorldVertex[] auxVertices = new WorldVertex[ownVertices * ownVertices];
+        auxVertices = new WorldVertex[xAxis * zAxis];
 
-        for (int v = 0, z = 0; z < ownVertices; z++) // Añade los vertices del chunk base al nuevo array para su posterior asignación al chunk base. Siempre se encuentra en la esquina inferior izquierda
+        for (int v = 0, z = 0; z < zAxis; z++) // Añade los vertices del chunk base al nuevo array para su posterior asignación al chunk base. Siempre se encuentra en la esquina inferior izquierda
         {
-            for (int x = 0; x < ownVertices; x++)
+            for (int x = 0; x < xAxis; x++)
             {
                 auxVertices[v] = vertices[x + z * clusterSideX];
                 v++;
             }
         }
 
-        if (chunkSideX == chunkSideZ)
-        {
-            ChunkController.chunkList[indexPos + lodOffset].gameObject.SetActive(true); // Activa chunk abajo dcha
-            ChunkController.chunkList[indexPos + lodOffset * ChunkController.chunkSide].gameObject.SetActive(true); // Activa chunk arriba izq
-            ChunkController.chunkList[indexPos + lodOffset + lodOffset * ChunkController.chunkSide].gameObject.SetActive(true); // Activa chunk arriba dcha            
-        }
-        else if (chunkSideX >= chunkSideZ)
-        {
-
-            ChunkController.chunkList[indexPos + lodOffset].gameObject.SetActive(true); // Chunk abajo dcha
-
-        }
-        else
-        {
-            ChunkController.chunkList[indexPos + lodOffset * ChunkController.chunkSide].gameObject.SetActive(true); // Chunk arriba izq
-        }
-
-        DataUpdate(auxVertices, ownVertices, ownVertices);
-
-        LoadMesh();
+        DataUpdate(auxVertices, xAxis, zAxis);
     }
 
     public void LoadMesh()
@@ -251,25 +259,12 @@ public class ChunkObject : MonoBehaviour // Chunk and Cluster
         float coordAdditionX = (float) (baseSize * chunkSideX) / (baseSide - 1); // Cuanto hay que añadir por vertice en las coord si damos por hecho que cada chunk base es de 20m * 20m // La formula (baseSide * chunkSide + 1) calcula cual sería el tamaño total de los chunks.
         float coordAdditionZ = (float) (baseSize * chunkSideZ) / (baseSide - 1);
 
-        //Debug.Log("ChunkSideX " + chunkSideX + " ChunkSideZ " + chunkSideZ);
-        //Debug.Log("LoD " + lodLevel);
-        //Debug.Log("Vertices Length: " + vertices.Length);
-
-        //for (int i = 0; i < vertices.Length; i++)
-        //{
-        //    if (vertices[i] == null)
-        //    {
-        //        Debug.Log("Vertex in " + i + " position: null");
-        //    }
-        //}        
-
         for (int v = 0, z = 0; z < baseSide; z++)
         {
             v = z * clusterSideX * chunkSideZ * density;
 
             for (int x = 0; x < baseSide; x++)
             {
-                //Debug.Log("Vertex " + v + ": ");
                 Vector3 vertexData = new Vector3(x * coordAdditionX, vertices[v].height * ChunkController.heightMultiplier, z * coordAdditionZ); // Vector de coordenadas creadas para corresponder el tamaño del chunk salvo la altura, que corresponde al mapa del mundo realizado con anterioridad
 
                 meshVertices[x + z * baseSide] = vertexData;
