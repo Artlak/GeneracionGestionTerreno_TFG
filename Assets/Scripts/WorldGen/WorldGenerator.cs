@@ -1,5 +1,4 @@
 using AuxiliarClasses;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class WorldGenerator : MonoBehaviour
