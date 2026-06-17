@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 645804535715786750}
   m_Layer: 0
   m_Name: ChunkAsset
-  m_TagString: Untagged
+  m_TagString: Walkeable
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -48,6 +48,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   chunkAsset: {fileID: 7029587540146230296}
+  lodLevel: 0
 --- !u!33 &4514098489946984188
 MeshFilter:
   m_ObjectHideFlags: 0

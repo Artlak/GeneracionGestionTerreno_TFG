@@ -78,7 +78,7 @@ public class MeshGenerator : MonoBehaviour
                 Debug.Log(x + z);
                 float y = CalculateNoise(x, z);
                 Debug.Log(y);
-                vertices[i] = new Vector3(x / density, heightCurve.Evaluate(y), z / density);
+                vertices[i] = new Vector3(x / density, y, z / density);
 
                 if (y > maxTerrainHeight)
                     maxTerrainHeight = y;

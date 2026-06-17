@@ -1,11 +1,7 @@
-using AuxiliarClasses;
-using JetBrains.Annotations;
+Ôªøusing AuxiliarClasses;
+using System;
 using System.Collections.Generic;
-using System.Drawing;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.Rendering;
-using UnityEngine.UIElements;
 
 public class ChunkController : MonoBehaviour
 {
@@ -16,11 +12,11 @@ public class ChunkController : MonoBehaviour
     [SerializeField] Transform player;
     [Range(5, 100)]
     public int radius = 5;
-    [Range(2, 10)]
+    [Range(2, 20)]
     public int maxLoDLevel = 5;
-    public static int chunkSide { get; private set; } // Cantidad de chunks de lado a lado del mapa, se asigna desde el mÈtodo CreateChunks al crear los chunks, se utiliza para gestionar los chunks y sus LoDs dentro del cÛdigo chunkObject
+    public static int chunkSide { get; private set; } // Cantidad de chunks de lado a lado del mapa, se asigna desde el m√©todo CreateChunks al crear los chunks, se utiliza para gestionar los chunks y sus LoDs dentro del c√≥digo chunkObject
     
-    public static int heightMultiplier { get; private set; } = 70;
+    public static int heightMultiplier { get; set; } = 70;
 
     readonly int baseSize = 20;
 
@@ -31,7 +27,7 @@ public class ChunkController : MonoBehaviour
     int radiusZoneStart;
     int radiusZoneEnd;
 
-    // Variables de posiciÛn del jugador para la gestiÛn de LoDs seg˙n distancia
+    // Variables de posici√≥n del jugador para la gesti√≥n de LoDs seg√∫n distancia
     int playerChunkX;
     int playerChunkZ;
 
@@ -39,6 +35,7 @@ public class ChunkController : MonoBehaviour
     int lastChunkZ;
 
     int direction;
+    bool canCheck = false; // Deshabilitado para que no ejecute el m√©todo Update, que se encargar√° de cargar los LoDs seg√∫n la distancia a jugador luego de la primera carga
 
     // direcciones
     readonly int rightD = 0;
@@ -46,16 +43,12 @@ public class ChunkController : MonoBehaviour
     readonly int upD = 2;
     readonly int downD = 3;
 
-    void Start()
-    {
-        enabled = false; // Deshabilitado para que no ejecute el mÈtodo Update, que se encargar· de cargar los LoDs seg˙n la distancia a jugador luego de la primera carga
-    }
-
     // Update is called once per frame
     void Update()
     {
-        if (CheckPosition())
+        if (canCheck && CheckPosition())
         {
+            Debug.Log("Cambio de chunk");
             LodLoader();
         }        
     }
@@ -76,39 +69,40 @@ public class ChunkController : MonoBehaviour
             {
                 WorldVertex[] _vertices = new WorldVertex[chunkSideVertices * chunkSideVertices];
 
-                for (int cZ = 0; cZ < chunkSideVertices; cZ++) // AÒade el rango de vÈrtices correspondiente al chunk a la lista de vÈrtices del chunk
+                for (int cZ = 0; cZ < chunkSideVertices; cZ++) // A√±ade el rango de v√©rtices correspondiente al chunk a la lista de v√©rtices del chunk
                 {   
                     for (int cX = 0; cX < chunkSideVertices; cX++)
                     {
-                        int worldVertexIndex = z * mapSideVertices * chunkSideJump + x * chunkSideJump + cZ * mapSideVertices + cX; // Õndice del mapa total de vÈrtices
+                        int worldVertexIndex = z * mapSideVertices * chunkSideJump + x * chunkSideJump + cZ * mapSideVertices + cX; // √çndice del mapa total de v√©rtices
 
-                        _vertices[cX + cZ * chunkSideVertices] = worldVertices[worldVertexIndex];        
-                    }                        
-                }
+                        _vertices[cX + cZ * chunkSideVertices] = worldVertices[worldVertexIndex];   
+                    }
+                }                
 
-                chunkAssetScript = Instantiate(chunkAsset, transform.position + new Vector3(x * baseSize, 0, z * baseSize), Quaternion.identity).GetComponent<ChunkObject>(); // Instancia el chunk en la posiciÛn correspondiente
-                chunkAssetScript.density = density; // Asigna la densidad al chunk para que pueda calcular su malla correctamente (si la paso m·s tarde del data update = 0)
+                chunkAssetScript = Instantiate(chunkAsset, transform.position + new Vector3(x * baseSize, 0, z * baseSize), Quaternion.identity).GetComponent<ChunkObject>(); // Instancia el chunk en la posici√≥n correspondiente
+                chunkAssetScript.density = density; // Asigna la densidad al chunk para que pueda calcular su malla correctamente (si la paso m√°s tarde del data update = 0)
                 chunkAssetScript.MeshInizialiciation(); // Crea la malla del chunk y asigna sus componentes MeshFilter y MeshCollider para su correcto funcionamiento a la hora de renderizar y colisionar con el chunk
-                chunkAssetScript.DataUpdate(_vertices, chunkSideVertices, chunkSideVertices); // Actualiza los datos del chunk con la lista de vÈrtices del chunk y sus dimensiones
-                chunkAssetScript.indexPos = z * chunkSide + x; // Guarda la posiciÛn del chunk en la lista de chunks para su posterior gestiÛn en la uniÛn y separaciÛn de chunks                
+                chunkAssetScript.DataUpdate(_vertices, chunkSideVertices, chunkSideVertices); // Actualiza los datos del chunk con la lista de v√©rtices del chunk y sus dimensiones
+                chunkAssetScript.indexPos = z * chunkSide + x; // Guarda la posici√≥n del chunk en la lista de chunks para su posterior gesti√≥n en la uni√≥n y separaci√≥n de chunks                
 
-                chunkList[x + z * chunkSide] = chunkAssetScript; // AÒade el chunk a la lista de chunks para su posterior gestiÛn
+                chunkList[x + z * chunkSide] = chunkAssetScript; // A√±ade el chunk a la lista de chunks para su posterior gesti√≥n
             }
         }
 
-        ChunkFirstLoad(); // Carga de Lods seg˙n distancia a jugador
+        ChunkFirstLoad(); // Carga de Lods seg√∫n distancia a jugador
     }
 
-    void ChunkFirstLoad() // Carga de Lods seg˙n distancia a jugador
+    void ChunkFirstLoad() // Carga de Lods seg√∫n distancia a jugador
     {
+        Debug.Log(chunkSide + " Chunkside");
         chunkListSpawnCenter = chunkList.Length % 2 == 0 ? chunkList.Length / 2 - chunkSide / 2 : chunkList.Length / 2; // Chunk a considerar central, donde va a aparecer el jugador
 
         lastChunkX = chunkListSpawnCenter % chunkSide;
         lastChunkZ = chunkListSpawnCenter / chunkSide;
 
-        int maxAllowedLoD = (int)Mathf.Log(Mathf.NextPowerOfTwo(chunkSide / 2 - radius - 1), 2) + 1; // LoD m·ximo permitido con el centro del radio en el centro del mapa. Aunque puede que al moverse el jugador pueda aumentar la simplicidad del LoD, no deberÌa de importar lo suficiente si desde el centro no permite realizar esta operaciÛn.
+        int maxAllowedLoD = (int)Mathf.Log(Mathf.NextPowerOfTwo(chunkSide / 2 - radius - 1), 2) + 1; // LoD m√°ximo permitido con el centro del radio en el centro del mapa. Aunque puede que al moverse el jugador pueda aumentar la simplicidad del LoD, no deber√≠a de importar lo suficiente si desde el centro no permite realizar esta operaci√≥n.
 
-        if (maxAllowedLoD < maxLoDLevel) // Asignamos el LoD m·ximo permitido al LoD m·ximo a cargar para evitar cargar LoDs demasiado simples y que afectarÌan a la zona dentro del radio. Solo si es menor el calculado al seleccionado.
+        if (maxAllowedLoD < maxLoDLevel) // Asignamos el LoD m√°ximo permitido al LoD m√°ximo a cargar para evitar cargar LoDs demasiado simples y que afectar√≠an a la zona dentro del radio. Solo si es menor el calculado al seleccionado.
         {
             maxLoDLevel = maxAllowedLoD;
         }        
@@ -119,19 +113,20 @@ public class ChunkController : MonoBehaviour
             {
                 chunkList[i].LoadMesh();
             }
+            player.position = new Vector3(lastChunkX * baseSize, heightMultiplier + 2f, lastChunkZ * baseSize);
         }
-        else // Se encarga de decidir que chunks fusionar, activar los v·lidos y el update para comprobar la posiciÛn del jugador
+        else // Se encarga de decidir que chunks fusionar, activar los v√°lidos y el update para comprobar la posici√≥n del jugador
         {
-            radiusDownCorner = chunkListSpawnCenter - radius * chunkSide - radius; // Coord del primer chunk dentro del radio, se calcula restando al centro del spawn el n˙mero de chunks que hay en el radio multiplicado por el n˙mero de chunks que hay en cada lÌnea, y restando el n˙mero de chunks que hay en el radio para tener en cuenta los chunks que se encuentran a la izquierda del centro del spawn
-            radiusUpCorner = chunkListSpawnCenter + radius * chunkSide + radius; // Coord del ˙ltimo chunk dentro del radio, se calcula igual que la anterior variable pero restando el radio
-            radiusZoneStart = (chunkListSpawnCenter - radius) % chunkSide; // Coordenada en X que marca el inicio de la zona del radio, se calcula restando al centro del spawn el n˙mero de chunks que hay en el radio multiplicado por el n˙mero de chunks que hay en cada lÌnea, y dividiendo el resultado entre el n˙mero de chunks que hay en cada lÌnea para pasar de coordenada 1D a coordenada 2D
+            radiusDownCorner = chunkListSpawnCenter - radius * chunkSide - radius; // Coord del primer chunk dentro del radio, se calcula restando al centro del spawn el n√∫mero de chunks que hay en el radio multiplicado por el n√∫mero de chunks que hay en cada l√≠nea, y restando el n√∫mero de chunks que hay en el radio para tener en cuenta los chunks que se encuentran a la izquierda del centro del spawn
+            radiusUpCorner = chunkListSpawnCenter + radius * chunkSide + radius; // Coord del √∫ltimo chunk dentro del radio, se calcula igual que la anterior variable pero restando el radio
+            radiusZoneStart = (chunkListSpawnCenter - radius) % chunkSide; // Coordenada en X que marca el inicio de la zona del radio, se calcula restando al centro del spawn el n√∫mero de chunks que hay en el radio multiplicado por el n√∫mero de chunks que hay en cada l√≠nea, y dividiendo el resultado entre el n√∫mero de chunks que hay en cada l√≠nea para pasar de coordenada 1D a coordenada 2D
             radiusZoneEnd = (chunkListSpawnCenter + radius) % chunkSide;// Coordenada en X que marca el fin de la zona del radio, se calcula al igual que la anterior variable pero restando
 
-            for (int jump, i = 1; i < maxLoDLevel; i++) // Para saltar los chunks y lÌneas de chunks que no se van a usar es necesario comenzar por el valor 1 y acabar antes de llegar al vamor m·ximo. Para entenderlo: El LoD 2 se calcula a la primera vuelta, y los elementos a saltar siempre son el elemento en el que se encuentra + 2 elevado a LoD - 1.
+            for (int jump, i = 1; i < maxLoDLevel; i++) // Para saltar los chunks y l√≠neas de chunks que no se van a usar es necesario comenzar por el valor 1 y acabar antes de llegar al vamor m√°ximo. Para entenderlo: El LoD 2 se calcula a la primera vuelta, y los elementos a saltar siempre son el elemento en el que se encuentra + 2 elevado a LoD - 1.
             {
                 jump = 1 << i; // Cantidad de chunks a saltar para cada LoD
 
-                for (int z = 0; z < chunkSide; z += jump) // Se salta las lÌneas de chunks que no se van a usar para cargar los LoDs buscando solo desde las que puede realizar un LoD de menos calidad.
+                for (int z = 0; z < chunkSide; z += jump) // Se salta las l√≠neas de chunks que no se van a usar para cargar los LoDs buscando solo desde las que puede realizar un LoD de menos calidad.
                 {
                     for (int x = 0; x < chunkSide; x += jump)
                     {
@@ -139,7 +134,7 @@ public class ChunkController : MonoBehaviour
                         int sidePosition = x + jump + z * chunkSide; // Chunk dcha a juntar
                         int sideUpPosition = x + jump + ((z + jump) * chunkSide); // Chunk dcha y arriba a juntar
 
-                        bool validLoDPosition = (sideUpPosition < radiusDownCorner || basePosition > radiusUpCorner) /* Se encuentra antes o despuÈs de la zona de radio */ || (sidePosition < radiusZoneStart + z * chunkSide /* Se encuentra a la izq de la zona de radio */ || basePosition > radiusZoneEnd + z * chunkSide) /* Se encuentra a la dcha de la zona de radio */; // Comprueba si se encuentra antes de llegar al primer elemento que pertenece al radio, despuÈs o a los bordes del radio
+                        bool validLoDPosition = (sideUpPosition < radiusDownCorner || basePosition > radiusUpCorner) /* Se encuentra antes o despu√©s de la zona de radio */ || (sidePosition < radiusZoneStart + z * chunkSide /* Se encuentra a la izq de la zona de radio */ || basePosition > radiusZoneEnd + z * chunkSide) /* Se encuentra a la dcha de la zona de radio */; // Comprueba si se encuentra antes de llegar al primer elemento que pertenece al radio, despu√©s o a los bordes del radio
 
                         if (validLoDPosition) 
                         {
@@ -149,15 +144,24 @@ public class ChunkController : MonoBehaviour
                 }
             }
 
-            // Mover jugador antes de activar carga de chunks de forma din·mica
+            for (int i = 0; i < chunkList.Length; i++)
+            {
+                chunkList[i].alreadyLoaded = true;
+                if (chunkList[i].gameObject.activeSelf)
+                {
+                    chunkList[i].LoadMesh();
+                }
+            }
 
-            player.position = new Vector3(lastChunkX * baseSize, 100, lastChunkZ * baseSize);
+            // Mover jugador antes de activar carga de chunks de forma din√°mica
 
-            enabled = true; // Habilita el script para que se ejecute el mÈtodo Update, que se encargar· de cargar los LoDs seg˙n la distancia a jugador luego de la primera carga
+            player.position = new Vector3(lastChunkX * baseSize, heightMultiplier + 2f, lastChunkZ * baseSize);
+
+            canCheck = true; // Habilita el script para que se ejecute el m√©todo Update, que se encargar√° de cargar los LoDs seg√∫n la distancia a jugador luego de la primera carga
         }
     }
 
-    void LodLoader() // Seg˙n donde se haya movido el jugador, mapea la zona y escanea la zona alrrededor del radio para cargar o descargar los chunks que se encuentran alrrededor o dentro de la zona
+    void LodLoader() // Seg√∫n donde se haya movido el jugador, mapea la zona y escanea la zona alrrededor del radio para cargar o descargar los chunks que se encuentran alrrededor o dentro de la zona
     {
         int heigth;
         int side;
@@ -174,7 +178,7 @@ public class ChunkController : MonoBehaviour
 
         bool down = (playerChunkListPosition - radius * chunkSide) >= 0 ? true : false;
 
-        if (right && left && up && down) // No se encuentra junto a ning˙n borde
+        if (right && left && up && down) // No se encuentra junto a ning√∫n borde
         {
             heigth = 2 * radius + 1;
             side = 2 * radius + 1;
@@ -205,194 +209,177 @@ public class ChunkController : MonoBehaviour
             radiusZoneEnd = (playerChunkListPosition + sideRight) % chunkSide;
         }
 
-        int posOrNeg = direction % 2 == 0 ? -1 : 0; // Esta variable se usa en las funciones de escaneo y cambio de los LoDs en la parte en la que debe comprobar hacia que direcciÛn tiene que comprobar.
+        int posOrNeg = 1;
+
+        if (direction == rightD) posOrNeg = -1; // Si voy a la derecha, fusiono los de la izquierda (-X)
+        else if (direction == leftD) posOrNeg = 1;  // Si voy a la izquierda, fusiono los de la derecha (+X)
+        else if (direction == upD) posOrNeg = -1; // Si voy hacia arriba, fusiono los de abajo (-Z * chunkSide)
+        else if (direction == downD) posOrNeg = 1;  // Si voy hacia abajo, fusiono los de arriba (+Z * chunkSide)
+
         if (direction == rightD || direction == leftD) // Revisa movimientos a izq y dcha
         {
-            int rightCorner = radiusDownCorner + side - 1;
+            int rightCorner = radiusDownCorner + side;
 
             if (direction == rightD)
             {
                 if (right)
                 {
-                    SideOperations(heigth, rightCorner, !right, posOrNeg); // Llama a funcion que realiza de forma autom·tica las funciones de carga y descarga de chunks. Especifica del lateral
+                    DivisionOperations(heigth, rightCorner, true); // Llama a funcion que realiza de forma autom√°tica las funciones de carga y descarga de chunks. Especifica del lateral
                 }                
 
                 if (left && (playerChunkListPosition - radius - 2) / chunkSide == playerChunkListPosition / chunkSide)
                 {
-                    SideOperations(heigth, radiusDownCorner, right, posOrNeg); // Llama a funcion que realiza de forma autom·tica las funciones de carga y descarga de chunks. Especifica del lateral
+                    SideOperations(heigth, radiusDownCorner, posOrNeg); // Llama a funcion que realiza de forma autom√°tica las funciones de carga y descarga de chunks. Especifica del lateral
                 }                    
             }
             else if (direction == leftD)
             {
                 if (left)
                 {                    
-                    SideOperations(heigth, radiusDownCorner, !left, posOrNeg); // LLama a funcion que realiza de forma autom·tica las funciones de carga y descarga de chunks. Especifica del lateral
+                    DivisionOperations(heigth, radiusDownCorner, true); // LLama a funcion que realiza de forma autom√°tica las funciones de carga y descarga de chunks. Especifica del lateral
                 }
 
                 if (right && (playerChunkListPosition + radius + 2) / chunkSide == playerChunkListPosition / chunkSide)
                 {                    
-                    SideOperations(heigth, rightCorner, left, posOrNeg); // LLama a funcion que realiza de forma autom·tica las funciones de carga y descarga de chunks. Especifica del lateral
+                    SideOperations(heigth, rightCorner, posOrNeg); // LLama a funcion que realiza de forma autom√°tica las funciones de carga y descarga de chunks. Especifica del lateral
                 }
             }
         }
         else // Revisa movimientos arriba y abajo
         {
-            int upCorner = radiusUpCorner - side + 1;
+            int upCorner = radiusUpCorner - side;
 
             if (direction == upD)
             {
                 if (up)
                 {                    
-                    HeightOperations(side, upCorner, !up, posOrNeg); // LLama a funcion que realiza de forma autom·tica las funciones de carga y descarga de chunks. Especifica de altura
+                    DivisionOperations(side, upCorner, false); // LLama a funcion que realiza de forma autom√°tica las funciones de carga y descarga de chunks. Especifica de altura
                 }
 
                 if (down && (playerChunkListPosition - (radius - 2) * chunkSide) % chunkSide == playerChunkListPosition % chunkSide)
                 {
-                    HeightOperations(side, radiusDownCorner, up, posOrNeg); // LLama a funcion que realiza de forma autom·tica las funciones de carga y descarga de chunks. Especifica de altura
+                    HeightOperations(side, radiusDownCorner, posOrNeg); // LLama a funcion que realiza de forma autom√°tica las funciones de carga y descarga de chunks. Especifica de altura
                 }
             }
             else if (direction == downD)
             {
                 if (down)
                 {
-                    HeightOperations(side, radiusDownCorner, !left, posOrNeg); // LLama a funcion que realiza de forma autom·tica las funciones de carga y descarga de chunks. Especifica de altura
+                    DivisionOperations(side, radiusDownCorner, false); // LLama a funcion que realiza de forma autom√°tica las funciones de carga y descarga de chunks. Especifica de altura
                 }
 
                 if (up && (playerChunkListPosition + (radius + 2) * chunkSide) % chunkSide == playerChunkListPosition % chunkSide)
                 {
-                    HeightOperations(side, upCorner, left, posOrNeg); // LLama a funcion que realiza de forma autom·tica las funciones de carga y descarga de chunks. Especifica de altura
+                    HeightOperations(side, upCorner, posOrNeg); // LLama a funcion que realiza de forma autom√°tica las funciones de carga y descarga de chunks. Especifica de altura
                 }
             }
         }
     }
 
-    void HeightOperations(int _side, int _corner, bool _addLod, int _posOrNeg) // Realiza un bucle que sive tanto para izquierda como derecha que revisa una fila entera y devuelve a la m·xima calidad los elementos con LoD aplicado.
+    void HeightOperations(int _side, int _corner, int _posOrNeg) // Operaci√≥n que mapea zonas altas y bajar alrrededor del radio para comprobar si se pueden unir en LoDs mayores
     {
-        if (_addLod) // Comprueba si es para bajar el nivel de detalle o simplemente para dividir
+        for (int x = 0; x < _side; x++)
         {
-            int loDlvl = 1; // Carga de loD a comprobar
-            int currentLoDlvl = 1 << loDlvl; // Me permite conocer el multiplo de 2 actual que usarÈ para realizar varias operaciones y comparaciones. Se actualiza al final del bucle.
-            int baseSide = _corner % chunkSide;
-            bool stillSameColumn = true; // Variable usada para comprobar si se puede seguir comprobando la columna o no quedan m·s elementos que comprobar para crear mayores Lods
+            int baseChunkIndex = _corner + x; // Coordenada base
+            if (baseChunkIndex < 0 || baseChunkIndex >= chunkList.Length || chunkList[baseChunkIndex] == null) continue; // Coprobar si es v√°lida
 
-            while (stillSameColumn && loDlvl < maxLoDLevel) // ComprobaciÛn de altura coincidente y si supera el max LoD permitido
+            for (int loDlvl = 1; loDlvl < maxLoDLevel; loDlvl++)
             {
-                for (int vertexSide, v = 0, x = 0; x < _side; x++)
-                {
-                    vertexSide = x + baseSide; // Altura. La guardo para mayor legibilidad en el cÛdigo a la hora de comprobar si es multiplo de alguna potencia del LoDActual
-                    v = _corner + x + (currentLoDlvl * _posOrNeg) * chunkSide; // Vertices de la nueva fila a comprobar
+                int currentLoDlvl = 1 << loDlvl;
 
-                    if (chunkList[v].gameObject.activeSelf && vertexSide % currentLoDlvl == 0 && (_corner + (currentLoDlvl * _posOrNeg) * chunkSide) % currentLoDlvl == 0 && chunkList[v].lodLevel < currentLoDlvl)
-                    {
-                        chunkList[v].ChunkFusion();
-                        x += currentLoDlvl - 1; // Para saltar elementos que ya se sabe que van a ser nulos o que no se pueden unir.
-                    }
-                    else if (x > currentLoDlvl && chunkList[v].gameObject.activeSelf)
-                    {
-                        return;
-                    }
+                int targetChunkIndex = baseChunkIndex + (currentLoDlvl * _posOrNeg * chunkSide);
+                if (targetChunkIndex < 0 || targetChunkIndex >= chunkList.Length || chunkList[targetChunkIndex] == null) break; // Coprobar si es v√°lida
+
+                // Valores simplificados a eje x y z
+                int originX = chunkList[targetChunkIndex].indexPos % chunkSide;
+                int originZ = chunkList[targetChunkIndex].indexPos / chunkSide;
+
+                if (originX % currentLoDlvl != 0 || originZ % currentLoDlvl != 0) break; // Coprobar si es v√°lida en este nivel de lod
+
+                if (chunkList[targetChunkIndex].gameObject.activeSelf && chunkList[targetChunkIndex].lodLevel < currentLoDlvl)
+                {
+                    chunkList[targetChunkIndex].ChunkFusion(); // Fusion de chunks si es valido
                 }
-                loDlvl++; // Aumento de LoD para siguiente vuelta
-                currentLoDlvl = 1 << loDlvl; // ActualizaciÛn de variable
-                stillSameColumn = (_corner + (currentLoDlvl * _posOrNeg) * chunkSide) % chunkSide == baseSide; // ComprobaciÛn de que sigue siendo v·lido el bucle. Uso de la variable posOrNeg para saber en que direcciÛn continuar la b˙squeda de chunks para LoDs
-            }
-        }
-        else
-        {
-            Stack<int> indexList = new Stack<int>(); // Pila usada para encontrar origen de LoD padre e ir cargando en orden los LoDs de mayor calidad hasta tener en m·xima calidad el chunk indicado
-
-            for (int v = 0, x = 0; x < _side; x++)
-            {
-                v = _corner + x;
-                indexList.Push(v);
-                do
+                else
                 {
-                    if (chunkList[v].gameObject.activeSelf)
-                    {
-                        if (chunkList[v].lodLevel != 1) // Solo si necesita ser dividido
-                        {
-                            v = indexList.Pop();
-                            chunkList[v].ChunkDivision();
-                        }
-                        else
-                        {
-                            indexList.Pop();
-                        }
-                    }
-                    else
-                    {
-                        indexList.Push(chunkList[v].parentChunkIndex);
-                        v = chunkList[v].parentChunkIndex;
-                    }
-                } while (indexList.Count > 0);
+                    break;
+                }
             }
         }
     }
 
-    void SideOperations(int _height, int _corner, bool _addLod, int _posOrNeg) // Realiza un bucle que sive tanto para izquierda como derecha que revisa una columna entera y devuelve a la m·xima calidad los elementos con LoD aplicado 
+    void SideOperations(int _height, int _corner, int _posOrNeg) // Operaci√≥n que mapea zonas laterales alrrededor del radio para comprobar si se pueden unir en LoDs mayores
     {
-        if (_addLod) // Comprueba si es para bajar el nivel de detalle o simplemente para dividir
+        for (int z = 0; z < _height; z++)
         {
-            int loDlvl = 1; // Carga de loD a comprobar
-            int currentLoDlvl = 1 << loDlvl; // Me permite conocer el multiplo de 2 actual que usarÈ para realizar varias operaciones y comparaciones. Se actualiza al final del bucle.
-            int baseHeight = _corner / chunkSide;
-            bool stillSameRow = true; // Variable usada para comprobar si se puede seguir comprobando la fila o no quedan m·s elementos que comprobar para crear mayores Lods
+            int baseChunkIndex = _corner + (z * chunkSide); // Coordenada base
+            if (baseChunkIndex < 0 || baseChunkIndex >= chunkList.Length || chunkList[baseChunkIndex] == null) continue; // Coprobar si es v√°lida
 
-            while (stillSameRow && loDlvl < maxLoDLevel) // ComprobaciÛn de altura coincidente y si supera el max LoD permitido
+            int baseRow = baseChunkIndex / chunkSide; // Altura de linea
+
+            for (int loDlvl = 1; loDlvl < maxLoDLevel; loDlvl++) // Comprobamos si alcanz√≥ m√°ximo de comprobaciones de carga de LoDs
             {
-                for (int vertexHeight, v = 0, z = 0; z < _height; z++)
+                int currentLoDlvl = 1 << loDlvl; // Asignamos para mayor claridad
+
+                int targetChunkIndex = baseChunkIndex + (currentLoDlvl * _posOrNeg); // Chunk a comprobar si permite LoD
+
+                // Comprobaciones de seguridad por si no es v√°lido
+                if (targetChunkIndex < 0 || targetChunkIndex >= chunkList.Length || chunkList[targetChunkIndex] == null) break;
+                if (chunkList[targetChunkIndex].indexPos / chunkSide != baseRow) break;
+                
+                // Valores simplificados a eje x y z
+                int originX = chunkList[targetChunkIndex].indexPos % chunkSide;
+                int originZ = chunkList[targetChunkIndex].indexPos / chunkSide;
+
+                if (originX % currentLoDlvl != 0 || originZ % currentLoDlvl != 0) break; // Comprobamos si se encuentra en una linea y columna que permita fuison y si permite el tipo de fusion adecuado
+
+                if (chunkList[targetChunkIndex].gameObject.activeSelf && chunkList[targetChunkIndex].lodLevel < currentLoDlvl)
                 {
-                    vertexHeight = z * chunkSide; // Altura. La guardo para mayor legibilidad en el ¥cÛdigo a la hora de comprobar si es multiplo de alguna potencia del LoDActual
-                    v = _corner + (currentLoDlvl * _posOrNeg) + z * chunkSide; // Vertices de la nueva columna a comprobar
-                    
-                    if (chunkList[v].gameObject.activeSelf && vertexHeight % currentLoDlvl == 0 && (_corner + (currentLoDlvl * _posOrNeg)) % currentLoDlvl == 0 && chunkList[v].lodLevel < currentLoDlvl)
-                    {
-                        chunkList[v].ChunkFusion();
-                        z += currentLoDlvl - 1; // Para saltar elementos que ya se sabe que van a ser nulos o que no se pueden unir.
-                    }
-                    else if (z > currentLoDlvl && chunkList[v].gameObject.activeSelf)
-                    {
-                        return;
-                    }
+                    chunkList[targetChunkIndex].ChunkFusion(); // Unimos chunks
                 }
-                loDlvl++; // Aumento de LoD para siguiente vuelta
-                currentLoDlvl = 1 << loDlvl; // ActualizaciÛn de variable
-                stillSameRow = (_corner + (currentLoDlvl * _posOrNeg)) / chunkSide == baseHeight; // ComprobaciÛn de que sigue siendo v·lido el bucle. Uso de la variable posOrNeg para saber en que direcciÛn continuar la b˙squeda de chunks para LoDs
-            }            
-        }
-        else
-        {
-            Stack<int> indexList = new Stack<int>(); // Pila usada para encontrar origen de LoD padre e ir cargando en orden los LoDs de mayor calidad hasta tener en m·xima calidad el chunk indicado
-
-            for (int v = 0, z = 0; z < _height; z++)
-            {
-                v = _corner + z * chunkSide;
-                indexList.Push(v);
-
-                do
+                else
                 {
-                    if (chunkList[v].gameObject.activeSelf)
-                    {
-                        if (chunkList[v].lodLevel != 1) // Solo si necesita ser dividido
-                        {
-                            v = indexList.Pop();
-                            chunkList[v].ChunkDivision();
-                        }
-                        else
-                        {
-                            indexList.Pop();
-                        }
-                    }
-                    else
-                    {
-                        indexList.Push(chunkList[v].parentChunkIndex);
-                        v = chunkList[v].parentChunkIndex;
-                    }
-                } while (indexList.Count > 0);                
+                    break; // Salimos de la l√≠nea
+                }
             }
-        }        
+        }
     }
 
+    void DivisionOperations(int _side, int _corner, bool lateral)
+    {
+        Stack<int> indexList = new Stack<int>(); // Pila usada para encontrar origen de LoD padre e ir cargando en orden los LoDs de mayor calidad hasta tener en m√°xima calidad el chunk indicado
+
+        for (int v = 0, i = 0; i < _side; i++)
+        {
+            v = lateral ? _corner + i * chunkSide : _corner + i;
+
+            if (chunkList[v].gameObject.activeSelf && chunkList[v].lodLevel == 1) continue;
+
+            int currentIndex = v;
+            while (currentIndex >= 0 && currentIndex < chunkList.Length && !chunkList[currentIndex].gameObject.activeSelf)
+            {
+                indexList.Push(currentIndex);
+                currentIndex = chunkList[currentIndex].parentChunkIndex; // Viaje hacia arriba
+            }
+
+            // Si el ancestro que encontramos encendido necesita dividirse, se mete a la cola
+            if (currentIndex >= 0 && currentIndex < chunkList.Length && chunkList[currentIndex].lodLevel != 1)
+            {
+                indexList.Push(currentIndex);
+            }
+
+            // Operaciones de divisi√≥n
+            while (indexList.Count > 0)
+            {
+                int chunkParaDividir = indexList.Pop();
+
+                if (chunkList[chunkParaDividir].lodLevel != 1)
+                {
+                    chunkList[chunkParaDividir].ChunkDivision();
+                }
+            }
+        }
+    }
     bool CheckPosition() // Comprobar si hace falta cargar y descargar LoDs
     {
         // Por si acaso en un futuro decido cambiarlo a que el 0,0,0 sea el centro del mapa
@@ -413,9 +400,9 @@ public class ChunkController : MonoBehaviour
             return false;
         }
 
-        if (playerChunkX != lastChunkX || playerChunkZ != lastChunkZ) // Si el jugador ha cambiado de chunk, se comprueba si es necesario cargar o descargar alg˙n LoD
+        if (playerChunkX != lastChunkX || playerChunkZ != lastChunkZ) // Si el jugador ha cambiado de chunk, se comprueba si es necesario cargar o descargar alg√∫n LoD
         {
-            // DirecciÛn del movimiento del jugador, 0 = derecha, 1 = izquierda, 2 = arriba, 3 = abajo
+            // Direcci√≥n del movimiento del jugador, 0 = derecha, 1 = izquierda, 2 = arriba, 3 = abajo
             if (playerChunkX > lastChunkX)
             {
                 direction = 0;

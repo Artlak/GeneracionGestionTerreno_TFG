@@ -10,16 +10,16 @@ public class WorldGenerator : MonoBehaviour
 
     // Variables necesarias para la creacción del mundo
 
-    [Range(1, 200)]
-    [SerializeField] int chunksSide; // Los Chunks, salvo que se altere la densidad, siempre serán de 21*21
+    [Range(1, 500)]
+    public int chunksSide = 30; // Los Chunks, salvo que se altere la densidad, siempre serán de 21*21
 
     [Range(1, 5)]
-    [SerializeField] int density = 1; // Multiplicador del tamaño del cuadrado que son los chunks Chunks (20). Media entre alturas de vertices para llenar huecos que no cubre el heightMap.
+    public int density = 1; // Multiplicador del tamaño del cuadrado que son los chunks Chunks (20). Media entre alturas de vertices para llenar huecos que no cubre el heightMap.
 
-    [SerializeField] int seed = 0;
+    public int seed = 0;
 
     [Range(0, 255)]
-    [SerializeField] byte extraBiomesCount = 0;
+    public byte extraBiomesCount = 0;
 
     [SerializeField] Gradient defaultBiomeColor;
 
@@ -28,8 +28,10 @@ public class WorldGenerator : MonoBehaviour
     int verticesSide;
     int verticesSideAux;
 
-    private void Start()
+    public void StartGeneration()
     {
+        Cursor.lockState = CursorLockMode.Locked;
+
         verticesSide = chunksSide * 20 + 1; // 20 porque salvo la línea extra que todos usan del anterior, usan 20 propios.
 
         verticesSideAux = verticesSide + (verticesSide - 1) * (density - 1); // Los elementos extra se calculan con en número de vértices totales - 1 por la densidad. chunksSide * 20 * density + 1 también sería una operación válida para calcular todos los elementos laterales;
@@ -169,6 +171,8 @@ public class WorldGenerator : MonoBehaviour
                 }
             }
         }
+
+        biome.Clear();
     }
 
     void ExtraVerticesAssignator()
@@ -191,7 +195,7 @@ public class WorldGenerator : MonoBehaviour
                 {
                     worldVertices[x + a + y * verticesSideAux].height = worldVertices[x + y * verticesSideAux].height + hIncrement * a; // El cálculo es la altura del último punto + incremento que es x parte del total para llegar al siguiente punto donde x es la densidad
                     worldVertices[x + a + y * verticesSideAux].resistance = worldVertices[x + y * verticesSideAux].resistance + rIncrement * a;
-                    worldVertices[x + a + y * verticesSideAux].color = Biome.ColorByResistance(biome.biomeColor.Evaluate(worldVertices[x + a + y * verticesSideAux].height), worldVertices[x + a + y * verticesSideAux].resistance);
+                    worldVertices[x + a + y * verticesSideAux].color = Color.Lerp(worldVertices[x + y * verticesSideAux + density].color, worldVertices[x + y * verticesSideAux].color, .5f); // Interpoación de color entre los elementos que rodean el vértice
                 }
             }
 
@@ -206,7 +210,7 @@ public class WorldGenerator : MonoBehaviour
 
                         worldVertices[x + (y - a) * verticesSideAux].height = worldVertices[x + y * verticesSideAux].height + hIncrement * a;
                         worldVertices[x + (y - a) * verticesSideAux].resistance = worldVertices[x + y * verticesSideAux].resistance + rIncrement * a;
-                        worldVertices[x + (y - a) * verticesSideAux].color = Biome.ColorByResistance(biome.biomeColor.Evaluate(worldVertices[x + (y - a) * verticesSideAux].height), worldVertices[x + (y - a) * verticesSideAux].resistance);
+                        worldVertices[x + (y - a) * verticesSideAux].color = Color.Lerp(worldVertices[x + (y - density) * verticesSideAux].color, worldVertices[x + y * verticesSideAux].color, .5f);
                     }
                 }
             }

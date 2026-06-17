@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace AuxiliarClasses
@@ -23,7 +24,7 @@ namespace AuxiliarClasses
 
         public float[] resistanceMap { get; set; }
 
-        public Gradient biomeColor { get; }
+        public Gradient biomeColor { get; set; }
 
         // Patrón de rotura
 
@@ -44,7 +45,7 @@ namespace AuxiliarClasses
 
         public static Color ColorByResistance(Color heightColor, float _resistance)
         {
-            Color newColor = Color.Lerp(heightColor, Color.black, _resistance * .5f);
+            Color newColor = Color.Lerp(heightColor, Color.black, _resistance * .7f);
 
             return newColor;
         }
@@ -87,6 +88,13 @@ namespace AuxiliarClasses
         {
             heightMap = Noise.GenerateNoiseMap(chunksSide, seed, 150f * (float)prng.NextDouble(), prng.Next(1, 16), (float)prng.NextDouble(), 1f + (float)prng.NextDouble(), (float)prng.NextDouble(), false);
             resistanceMap = Noise.GenerateNoiseMap(chunksSide, seed++, 150f * (float)prng.NextDouble(), prng.Next(1, 16), (float)prng.NextDouble(), 1f + (float)prng.NextDouble(), (float)prng.NextDouble(), true);
+        }
+
+        public void Clear()
+        {
+            heightMap = null;
+            resistanceMap = null;
+            biomeColor = null;
         }
     }
 }
