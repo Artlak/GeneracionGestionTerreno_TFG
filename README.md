@@ -1,4 +1,4 @@
-# GeneracionDestruccionTerreno_TFG
+# GeneracionGestionTerreno_TFG
 Trabajo de fin de grado Videojuegos
 
 El objetivo del proyecto es la generación mediante el uso de las mallas de vertices en Unity de un mundo de gran tamaño que se encuentre cargado en todo momento mediante un sistema de carga de LoDs adaptativo.
