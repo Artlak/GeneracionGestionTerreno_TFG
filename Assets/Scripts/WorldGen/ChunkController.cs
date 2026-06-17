@@ -10,6 +10,7 @@ public class ChunkController : MonoBehaviour
     public GameObject chunkAsset;
 
     [SerializeField] Transform player;
+    public CharacterController playerCC;
     [Range(5, 100)]
     public int radius = 5;
     [Range(2, 20)]
@@ -63,8 +64,7 @@ public class ChunkController : MonoBehaviour
         int mapSideVertices = chunkSide * baseSize * density + 1;
         int chunkSideJump = chunkSideVertices - 1;
 
-        chunkListSpawnCenter = chunkList.Length % 2 == 0 ? chunkList.Length / 2 - chunkSide / 2 : chunkList.Length / 2; // Chunk a considerar central, donde va a aparecer el jugador        
-        player.position = new Vector3(chunkListSpawnCenter % chunkSide * baseSize, heightMultiplier + 2f, chunkListSpawnCenter / chunkSide * baseSize);
+        chunkListSpawnCenter = chunkList.Length % 2 == 0 ? chunkList.Length / 2 - chunkSide / 2 : chunkList.Length / 2; // Chunk a considerar central, donde va a aparecer el jugador
         for (int z = 0; z < chunkSide; z++)
         {
             for (int x = 0; x < chunkSide; x++)
@@ -96,9 +96,6 @@ public class ChunkController : MonoBehaviour
 
     void ChunkFirstLoad() // Carga de Lods según distancia a jugador
     {
-        player.position = new Vector3(chunkListSpawnCenter % chunkSide * baseSize, heightMultiplier + 2f, chunkListSpawnCenter / chunkSide * baseSize);
-        Debug.Log(chunkSide + " Chunkside");        
-
         lastChunkX = chunkListSpawnCenter % chunkSide;
         lastChunkZ = chunkListSpawnCenter / chunkSide;
 
@@ -115,6 +112,7 @@ public class ChunkController : MonoBehaviour
             {
                 chunkList[i].LoadMesh();
             }
+            playerCC.Move(new Vector3(lastChunkX * baseSize, heightMultiplier + 2f, lastChunkZ * baseSize));
             player.position = new Vector3(lastChunkX * baseSize, heightMultiplier + 2f, lastChunkZ * baseSize);
         }
         else // Se encarga de decidir que chunks fusionar, activar los válidos y el update para comprobar la posición del jugador
@@ -157,6 +155,7 @@ public class ChunkController : MonoBehaviour
 
             // Mover jugador antes de activar carga de chunks de forma dinámica
 
+            playerCC.Move(new Vector3(lastChunkX * baseSize, heightMultiplier + 2f, lastChunkZ * baseSize));
             player.position = new Vector3(lastChunkX * baseSize, heightMultiplier + 2f, lastChunkZ * baseSize);
 
             canCheck = true; // Habilita el script para que se ejecute el método Update, que se encargará de cargar los LoDs según la distancia a jugador luego de la primera carga

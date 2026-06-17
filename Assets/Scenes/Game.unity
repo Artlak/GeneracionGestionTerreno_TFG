@@ -4308,6 +4308,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   chunkAsset: {fileID: 7029587540146230296, guid: c70e54f648c56194ba0522468f00220b, type: 3}
   player: {fileID: 1020901742}
+  playerCC: {fileID: 1020901744}
   radius: 5
   maxLoDLevel: 5
 --- !u!114 &1349102435
@@ -4332,6 +4333,7 @@ MonoBehaviour:
   height: {fileID: 1190037455}
   canvas: {fileID: 443526532}
   playerController: {fileID: 1020901743}
+  button: {fileID: 1008546104}
 --- !u!1 &1370616859
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,6 +1,7 @@
 using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class CanvasController : MonoBehaviour
 {
@@ -23,6 +24,8 @@ public class CanvasController : MonoBehaviour
     public Canvas canvas;
 
     public PlayerController playerController;
+
+    public Button button;
 
     private void Start()
     {
@@ -72,6 +75,7 @@ public class CanvasController : MonoBehaviour
 
     public void StartGeneration()
     {
+        button.enabled = false;
         playerController.enabled = true;
         canvas.enabled = false;
         worldGenerator.StartGeneration();
