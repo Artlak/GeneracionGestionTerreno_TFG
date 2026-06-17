@@ -63,6 +63,8 @@ public class ChunkController : MonoBehaviour
         int mapSideVertices = chunkSide * baseSize * density + 1;
         int chunkSideJump = chunkSideVertices - 1;
 
+        chunkListSpawnCenter = chunkList.Length % 2 == 0 ? chunkList.Length / 2 - chunkSide / 2 : chunkList.Length / 2; // Chunk a considerar central, donde va a aparecer el jugador        
+        player.position = new Vector3(chunkListSpawnCenter % chunkSide * baseSize, heightMultiplier + 2f, chunkListSpawnCenter / chunkSide * baseSize);
         for (int z = 0; z < chunkSide; z++)
         {
             for (int x = 0; x < chunkSide; x++)
@@ -94,8 +96,8 @@ public class ChunkController : MonoBehaviour
 
     void ChunkFirstLoad() // Carga de Lods según distancia a jugador
     {
-        Debug.Log(chunkSide + " Chunkside");
-        chunkListSpawnCenter = chunkList.Length % 2 == 0 ? chunkList.Length / 2 - chunkSide / 2 : chunkList.Length / 2; // Chunk a considerar central, donde va a aparecer el jugador
+        player.position = new Vector3(chunkListSpawnCenter % chunkSide * baseSize, heightMultiplier + 2f, chunkListSpawnCenter / chunkSide * baseSize);
+        Debug.Log(chunkSide + " Chunkside");        
 
         lastChunkX = chunkListSpawnCenter % chunkSide;
         lastChunkZ = chunkListSpawnCenter / chunkSide;
